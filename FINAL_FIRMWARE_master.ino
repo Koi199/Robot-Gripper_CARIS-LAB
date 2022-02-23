@@ -40,8 +40,12 @@
 #define OPEN_DIR 0
 #define CLOSE_DIR 1
 #define ROLLER_SPEED_DEFAULT 100   /* 100% PWM duty cycle */
-#define LOADING_FORCE 1.8          /* lower limit of optimal range for pleat loading */
+#define LOADING_FORCE 1335         /* lower limit of optimal range for pleat loading - Kyle is making a wild change here... lol... original value is 1.8*/
 #define MIGRATING_FORCE 0.4        /* lower limit of optimal range for pleat migration */
+#define IDEALRPM 20 /* Define the Ideal RPM setting - Arbitrary value of 20*/
+#define FORCEINCR 4 /* Define Force Increment for the pleat loading*/
+#define GAPINCR 100 /* Fixed increment for increasing force, might need to tune
+
 
 /* create three new ToF sensor objects */
 Adafruit_VL6180X ToF1;
@@ -58,6 +62,8 @@ int currentIndex = HEIGHT0;      /* indexes refer to ToF sensors 1, 2, 3 respect
 int currentHeight;               /* for storing current pleat height */
 int newHeight;                   /* for storing new pleat height */
 int pleatSlip;                   /* 0 or 1 for detecting whether  pleat has slipped */
+int OldPleatloadforce;              /* stores the force from load cell for comparison in a pleat loading loop*/
+int NewPleatloadforce;
 
 byte serialData; /* for storing commands from the serial monitor */
 
@@ -482,6 +488,37 @@ void loop()
   //      Serial.println(sensorReadings[counter]);
   //    }
   //  }
+
+  /*Loops from here are implemented by Kyle Ah Von
+  It closes the jaws until loading force is reached  */
+ /*Loads pleat, check the RPM and adjust the gripper opening as well as the loading*/
+ else if (serialData == '1')
+ {
+   
+   gripper.rightMotorControl(100, CLOCKWISE);
+   gripper.leftMotorControl(100, COUNTER_CLOCKWISE);
+
+   OldPleatloadforce = LMotor.getLoadCellForce()*0.4536/1.327-0.27,3;
+
+   while (OldPleatloadforce < LOADING_FORCE)
+   {
+
+    LMotor.moveSteps(GAPINCR, CLOSE_DIR);
+    OldPleatloadforce = LMotor.getLoadCellForce()*0.4536/1.327-0.27,3;
+
+   }
+
+/* Might be good to include a P&ID loop to get better force*/
+   while ( rpm >= IDEALRPM )
+   {  
+     LMotor.moveSteps(GAPINCR, CLOSE_DIR);
+
+     NewPleatloadforce = LMotor.getLoadCellForce()*0.4536/1.327-0.27,3;
+
+     if ())
+      LMotor.moveSteps(GAPINCR, CLOSE_DIR);
+   }
+ }
 
   serialData = 0;
 }
